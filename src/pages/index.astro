@@ -1,0 +1,80 @@
+---
+import BaseLayout from '../components/BaseLayout.astro';
+import ResourceCard from '../components/ResourceCard.astro';
+import { catalog, categories } from '../lib/catalog.mjs';
+
+const featured = catalog.filter((item) => item.featured && item.category !== 'extra').slice(0, 6);
+const mainEntries = catalog.filter((item) => item.category !== 'extra');
+---
+
+<BaseLayout>
+  <section class="hero">
+    <div class="shell hero-grid">
+      <div>
+        <p class="eyebrow">KAOYAN ENGLISH WRITING</p>
+        <h1>把好作文，<br /><span>真正背下来。</span></h1>
+        <p class="hero-copy">从真题范文到万能语料，按题型梳理、分段阅读、遮挡背诵。少一点翻找，多一点记住。</p>
+        <form class="hero-search" action="/library/" method="get">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+          <label class="sr-only" for="home-search">搜索作文资料</label>
+          <input id="home-search" type="search" name="q" placeholder="搜索主题、年份或表达…" autocomplete="off" />
+          <button type="submit">开始查找</button>
+        </form>
+      </div>
+      <div class="hero-stats" aria-label="资料统计">
+        <div class="stat-card"><strong>{mainEntries.length}</strong><span>组核心资料</span></div>
+        <div class="stat-card"><strong>37</strong><span>张真题配图</span></div>
+        <div class="stat-card"><strong data-stat="favorites">0</strong><span>我的收藏</span></div>
+        <div class="stat-card"><strong data-stat="completed">0</strong><span>已经学过</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight">
+    <div class="shell">
+      <div class="section-heading">
+        <p class="eyebrow">按模块学习</p>
+        <h2>先找到你要攻克的题型</h2>
+      </div>
+      <div class="category-grid">
+        {categories.map((category, index) => (
+          <a class="category-card" href={`/library/?category=${category.id}`}>
+            <span class="category-icon">0{index + 1}</span>
+            <h3>{category.label}</h3>
+            <p>{category.description}</p>
+            <span class="link-arrow">查看资料 →</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section" data-recent-section hidden>
+    <div class="shell">
+      <div class="section-heading">
+        <p class="eyebrow">继续学习</p>
+        <h2>从上次停下的地方继续</h2>
+      </div>
+      <div class="resource-grid">
+        {mainEntries.map((item) => <ResourceCard item={item} hidden context="recent" />)}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="shell">
+      <div class="section-heading">
+        <p class="eyebrow">精选内容</p>
+        <h2>从这些重点开始</h2>
+        <p>覆盖大作文结构、小作文高频题型，以及能够灵活迁移的表达素材。</p>
+      </div>
+      <div class="resource-grid">
+        {featured.map((item) => <ResourceCard item={item} />)}
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+</style>

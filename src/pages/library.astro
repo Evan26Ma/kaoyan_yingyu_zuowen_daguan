@@ -1,0 +1,46 @@
+---
+import BaseLayout from '../components/BaseLayout.astro';
+import ResourceCard from '../components/ResourceCard.astro';
+import { catalog, categories } from '../lib/catalog.mjs';
+
+const entries = catalog.filter((item) => item.category !== 'extra');
+---
+
+<BaseLayout title="作文资料库" description="按题型、年份和主题查找考研英语作文范文、模板与语料。">
+  <section class="library-hero">
+    <div class="shell section-heading">
+      <p class="eyebrow">WRITING LIBRARY</p>
+      <h1>作文资料库</h1>
+      <p>搜索中英文正文，或按模块筛选。每篇内容都可以直接进入遮挡背诵。</p>
+    </div>
+  </section>
+  <div class="library-tools" data-library-tools>
+    <div class="shell search-bar">
+      <div class="search-field">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+        <label class="sr-only" for="library-search">搜索资料</label>
+        <input id="library-search" data-library-search type="search" placeholder="输入主题、年份或英文表达" autocomplete="off" />
+      </div>
+      <div class="filter-row" aria-label="资料分类">
+        <button class="filter-button" type="button" data-category-filter="all" aria-pressed="true">全部</button>
+        {categories.map((category) => <button class="filter-button" type="button" data-category-filter={category.id} aria-pressed="false">{category.label}</button>)}
+      </div>
+    </div>
+  </div>
+  <section class="section-tight">
+    <div class="shell">
+      <div class="results-head">
+        <h2>全部资料</h2>
+        <span data-result-count>{entries.length} 项内容</span>
+      </div>
+      <div class="resource-grid" data-library-grid>
+        {entries.map((item) => <ResourceCard item={item} />)}
+      </div>
+      <div class="empty-state" data-library-empty hidden>
+        <strong>没有找到相关内容</strong><br />换一个关键词，或者清除分类筛选试试。
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }</style>
