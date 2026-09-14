@@ -95,6 +95,10 @@ function languageClass(text) {
   return 'lang-mixed';
 }
 
+function isQuestionBlock(text) {
+  return /(?:^|\b)(?:directions?|part\s+b\s+52)\s*[:.]|^read the following|^write (?:an essay|a letter|an email|a notice)|^suppose you|^you should write|^do not sign|^in your essay,? you should|^(?:describe|interpret|give) (?:the |its |your )?(?:drawing|picture|intended meaning|comments)|^(?:题目|写作要求|作答要求)[：:]/i.test(text);
+}
+
 function cleanText(value) {
   return value
     .replace(/Copyright\s*©\s*2024\s*大道至简Loru\.?(?:\s*All Rights Reserved\.)?/gi, '')
@@ -253,8 +257,9 @@ export async function loadEntry(entry, rootDir = process.cwd()) {
     }
     node.classList.add('study-block');
     node.classList.add(languageClass(text));
+    if (isQuestionBlock(text)) node.classList.add('is-question');
   });
-  main.querySelectorAll('p.lang-en, li.lang-en, td.lang-en, blockquote.lang-en').forEach((node) => {
+  main.querySelectorAll('p.lang-en:not(.is-question), li.lang-en:not(.is-question), td.lang-en:not(.is-question), blockquote.lang-en:not(.is-question)').forEach((node) => {
     const sentences = splitEnglishSentences(cleanText(node.text));
     node.setAttribute('data-memory-count', String(sentences.length));
     node.set_content(sentences.map((sentence, index) => (

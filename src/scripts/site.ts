@@ -315,7 +315,7 @@ document.addEventListener('click', (event) => {
     return;
   }
 
-  const concealed = target.closest<HTMLElement>('.memory-segment:not(.is-revealed), .mode-recall .lang-zh:not(.is-revealed)');
+  const concealed = target.closest<HTMLElement>('.memory-segment:not(.is-revealed), .mode-recall .lang-zh:not(.is-question, .is-revealed)');
   if (concealed) {
     concealed.classList.add('is-revealed');
     const unit = concealed.closest<HTMLElement>('[data-learning-unit]');

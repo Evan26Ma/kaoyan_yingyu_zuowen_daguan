@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { parse } from 'node-html-parser';
 import { catalog, loadCatalog, normalizeSearch } from '../src/lib/catalog.mjs';
 
 test('catalog has stable unique identifiers and routes', () => {
@@ -37,4 +38,15 @@ test('every source document is parsed into searchable learning content', async (
 test('search normalization supports mixed Chinese and English input', () => {
   assert.equal(normalizeSearch('  Social   Phenomenon 社会现象  '), 'social phenomenon 社会现象');
   assert.equal(normalizeSearch('ＦＵＬＬＷＩＤＴＨ'), 'fullwidth');
+});
+
+test('exam directions stay visible in every recall mode', async () => {
+  const items = await loadCatalog();
+  let questionBlocks = 0;
+  for (const item of items) {
+    const document = parse(item.html);
+    questionBlocks += document.querySelectorAll('.is-question').length;
+    assert.equal(document.querySelectorAll('.is-question .memory-segment').length, 0, `${item.id} should never mask its question`);
+  }
+  assert.ok(questionBlocks >= 20, 'exam prompts should be identified across source sets');
 });
