@@ -1,5 +1,16 @@
 type RevealMode = 'all' | 'hide-en' | 'initials' | 'recall';
 type Theme = 'light' | 'dark';
+type ReadingStyle = 'exam' | 'comfort';
+
+interface ResumeState {
+  contentId: string;
+  path: string;
+  contentTitle: string;
+  unitId: string;
+  unitTitle: string;
+  segmentIndex: number;
+  updatedAt: number;
+}
 
 interface LearningState {
   version: 1;
@@ -8,6 +19,8 @@ interface LearningState {
   recent: string[];
   revealMode: RevealMode;
   theme: Theme;
+  readingStyle: ReadingStyle;
+  resume: ResumeState | null;
 }
 
 const STORAGE_KEY = 'kaoyan-writing:v1';
@@ -18,6 +31,8 @@ const EMPTY_STATE: LearningState = {
   recent: [],
   revealMode: 'all',
   theme: 'light',
+  readingStyle: 'exam',
+  resume: null,
 };
 
 function uniqueStrings(value: unknown): string[] {
@@ -27,6 +42,9 @@ function uniqueStrings(value: unknown): string[] {
 function readState(): LearningState {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const resume = parsed.resume;
+    const validResume = resume && typeof resume.contentId === 'string' && typeof resume.path === 'string' &&
+      /^\/(?:learn|extra)\//.test(resume.path) && typeof resume.unitId === 'string';
     return {
       version: 1,
       favorites: uniqueStrings(parsed.favorites),
@@ -34,6 +52,16 @@ function readState(): LearningState {
       recent: uniqueStrings(parsed.recent).slice(0, 8),
       revealMode: ['all', 'hide-en', 'initials', 'recall'].includes(parsed.revealMode) ? parsed.revealMode : 'all',
       theme: parsed.theme === 'dark' ? 'dark' : 'light',
+      readingStyle: parsed.readingStyle === 'comfort' ? 'comfort' : 'exam',
+      resume: validResume ? {
+        contentId: resume.contentId,
+        path: resume.path,
+        contentTitle: typeof resume.contentTitle === 'string' ? resume.contentTitle : '上次学习内容',
+        unitId: resume.unitId,
+        unitTitle: typeof resume.unitTitle === 'string' ? resume.unitTitle : '上次位置',
+        segmentIndex: Number.isInteger(resume.segmentIndex) ? Math.max(0, resume.segmentIndex) : 0,
+        updatedAt: typeof resume.updatedAt === 'number' ? resume.updatedAt : Date.now(),
+      } : null,
     };
   } catch {
     localStorage.removeItem(STORAGE_KEY);
@@ -87,6 +115,48 @@ function syncStateUI() {
   document.querySelectorAll<HTMLElement>('[data-stat="completed"]').forEach((node) => node.textContent = String(state.completed.length));
   renderFavorites();
   renderRecent();
+  renderResume();
+}
+
+function renderResume() {
+  const section = document.querySelector<HTMLElement>('[data-resume-section]');
+  if (!section) return;
+  const resume = state.resume;
+  section.hidden = !resume;
+  if (!resume) return;
+  const link = section.querySelector<HTMLAnchorElement>('[data-resume-link]');
+  const title = section.querySelector<HTMLElement>('[data-resume-title]');
+  const detail = section.querySelector<HTMLElement>('[data-resume-detail]');
+  if (link) link.href = `${resume.path}?resume=1#${encodeURIComponent(resume.unitId)}`;
+  if (title) title.textContent = resume.contentTitle;
+  if (detail) detail.textContent = `${resume.unitTitle}${resume.segmentIndex > 0 ? ` · 第 ${resume.segmentIndex + 1} 句` : ''}`;
+}
+
+function applyReadingStyle(style: ReadingStyle) {
+  state.readingStyle = style;
+  document.documentElement.dataset.readingStyle = style;
+  document.querySelectorAll<HTMLButtonElement>('[data-reading-style]').forEach((button) => {
+    button.setAttribute('aria-pressed', String(button.dataset.readingStyle === style));
+  });
+}
+
+let currentResumeUnit: HTMLElement | null = null;
+
+function recordResume(unit = currentResumeUnit) {
+  const contentId = document.body.dataset.contentId;
+  if (!contentId || !unit) return;
+  currentResumeUnit = unit;
+  const heading = unit.querySelector<HTMLElement>('.unit-heading h2');
+  state.resume = {
+    contentId,
+    path: location.pathname,
+    contentTitle: document.body.dataset.contentTitle || document.title.split('｜')[0],
+    unitId: unit.id,
+    unitTitle: heading?.textContent?.trim() || '学习分区',
+    segmentIndex: Number(unit.dataset.activeSegment || 0),
+    updatedAt: Date.now(),
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
 function renderFavorites() {
@@ -149,6 +219,7 @@ function setActiveSegment(unit: HTMLElement, index: number) {
   unit.dataset.activeSegment = String(next);
   segments[next].classList.add('is-active');
   segments[next].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  recordResume(unit);
 }
 
 function resetUnit(unit: HTMLElement) {
@@ -189,6 +260,8 @@ function revealNext(unit: HTMLElement) {
 }
 
 function initLearningUnits() {
+  const params = new URLSearchParams(location.search);
+  const requestedResume: ResumeState | null = params.get('resume') === '1' && state.resume && state.resume.contentId === document.body.dataset.contentId ? { ...state.resume } : null;
   document.querySelectorAll<HTMLElement>('[data-learning-unit]').forEach((unit) => {
     const segments = unitSegments(unit);
     segments.forEach((segment, index) => {
@@ -201,13 +274,24 @@ function initLearningUnits() {
 
   const links = [...document.querySelectorAll<HTMLAnchorElement>('.article-toc a[href^="#"]')];
   const sections = [...document.querySelectorAll<HTMLElement>('[data-learning-unit]')];
-  if ('IntersectionObserver' in window && links.length) {
+  if ('IntersectionObserver' in window && sections.length) {
     const observer = new IntersectionObserver((entries) => {
       const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (!visible) return;
       links.forEach((link) => link.classList.toggle('is-current', link.hash === `#${visible.target.id}`));
+      recordResume(visible.target as HTMLElement);
     }, { rootMargin: '-28% 0px -58% 0px', threshold: [0, .15, .5] });
     sections.forEach((section) => observer.observe(section));
+  }
+  if (!currentResumeUnit && sections[0] && !requestedResume) recordResume(sections[0]);
+
+  if (requestedResume) {
+    const unit = document.getElementById(requestedResume.unitId);
+    if (unit?.matches('[data-learning-unit]')) window.requestAnimationFrame(() => {
+      unit.scrollIntoView({ block: 'start' });
+      if (unitSegments(unit).length) setActiveSegment(unit, requestedResume.segmentIndex);
+      else recordResume(unit);
+    });
   }
 }
 
@@ -300,6 +384,12 @@ document.addEventListener('click', (event) => {
     saveState();
   }
 
+  const readingStyle = target.closest<HTMLButtonElement>('[data-reading-style]');
+  if (readingStyle) {
+    applyReadingStyle(readingStyle.dataset.readingStyle as ReadingStyle);
+    saveState();
+  }
+
   const unitMode = target.closest<HTMLSelectElement>('[data-unit-mode]');
   if (unitMode) return;
 
@@ -312,6 +402,7 @@ document.addEventListener('click', (event) => {
     if (control.dataset.unitAction === 'next') setActiveSegment(unit, current + 1);
     if (control.dataset.unitAction === 'reveal') revealNext(unit);
     if (control.dataset.unitAction === 'reset') resetUnit(unit);
+    recordResume(unit);
     return;
   }
 
@@ -320,6 +411,7 @@ document.addEventListener('click', (event) => {
     concealed.classList.add('is-revealed');
     const unit = concealed.closest<HTMLElement>('[data-learning-unit]');
     if (unit) updateUnitProgress(unit);
+    if (unit) recordResume(unit);
   }
 });
 
@@ -339,6 +431,7 @@ document.addEventListener('keydown', (event) => {
   segment.classList.add('is-revealed');
   const unit = segment.closest<HTMLElement>('[data-learning-unit]');
   if (unit) updateUnitProgress(unit);
+  if (unit) recordResume(unit);
 });
 
 document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
@@ -362,8 +455,10 @@ if (contentId) {
 }
 
 if (state.theme === 'dark') document.documentElement.dataset.theme = 'dark';
+applyReadingStyle(state.readingStyle);
 applyRevealMode(state.revealMode);
 syncStateUI();
 initLibrary();
 initLearningUnits();
 initGuideWelcome();
+window.addEventListener('pagehide', () => recordResume());

@@ -1,11 +1,11 @@
 ---
 interface Props {
   unit: any;
-  slug: string;
   number: number;
   total: number;
+  interactive?: boolean;
 }
-const { unit, slug, number, total } = Astro.props;
+const { unit, number, total, interactive = true } = Astro.props;
 ---
 
 <section class="learning-unit" id={unit.id} data-learning-unit data-mode="all">
@@ -15,7 +15,7 @@ const { unit, slug, number, total } = Astro.props;
       <h2>{unit.title}</h2>
       <p>{unit.wordCount ? `${unit.wordCount} 个英文词` : '图表与方法资料'} · {unit.sentenceCount ? `${unit.sentenceCount} 个可背句段` : '阅读单元'}</p>
     </div>
-    <div class="unit-header-actions">
+    {interactive && <div class="unit-header-actions">
       <label>
         <span>本卡模式</span>
         <select data-unit-mode aria-label={`${unit.title}背诵模式`}>
@@ -26,14 +26,10 @@ const { unit, slug, number, total } = Astro.props;
           <option value="recall">完整回忆</option>
         </select>
       </label>
-      <a class="unit-download" href={`/print/${slug}/${unit.id}/`} target="_blank" rel="noreferrer" data-unit-download>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 20h14"></path></svg>
-        下载 PDF
-      </a>
-    </div>
+    </div>}
   </header>
   <div class="unit-body" data-unit-body set:html={unit.html}></div>
-  <footer class="unit-controls">
+  {interactive && <footer class="unit-controls">
     <div class="sentence-navigation">
       <button type="button" data-unit-action="previous" aria-label="上一句">← 上一句</button>
       <button class="reveal-next" type="button" data-unit-action="reveal">揭示下一句</button>
@@ -41,5 +37,5 @@ const { unit, slug, number, total } = Astro.props;
       <button type="button" data-unit-action="reset">重新遮挡</button>
     </div>
     <span class="unit-progress" data-unit-progress aria-live="polite">0 / {unit.sentenceCount}</span>
-  </footer>
+  </footer>}
 </section>

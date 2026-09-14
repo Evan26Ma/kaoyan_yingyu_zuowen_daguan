@@ -28,10 +28,10 @@ const { item } = Astro.props;
       </div>
     </div>
   </header>
-  <StudyToolbar id={item.id} />
+  <StudyToolbar id={item.id} slug={item.slug} interactive={item.studyMode !== 'reference'} />
   <div class="shell article-layout">
     <article class="study-content" data-study-content>
-      {item.units.map((unit: any, index: number) => <LearningUnit unit={unit} slug={item.slug} number={index + 1} total={item.units.length} />)}
+      {item.units.map((unit: any, index: number) => <LearningUnit unit={unit} number={index + 1} total={item.units.length} interactive={item.studyMode !== 'reference'} />)}
     </article>
     <aside class="article-toc" aria-label="本文目录">
       <strong>本文目录</strong>

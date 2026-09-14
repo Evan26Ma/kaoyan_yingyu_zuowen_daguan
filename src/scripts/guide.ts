@@ -3,7 +3,7 @@ const steps = [
   { selector: '[data-tour-target="page-mode"]', title: '逐步减少提示', copy: '全页模式会统一控制所有卡片。建议从中英对照开始，最后挑战完整回忆。' },
   { selector: '.memory-segment', title: '一句一句主动回忆', copy: '被遮挡的英文可以单击揭示，也可以用卡片底部按钮逐句推进。' },
   { selector: '[data-unit-mode]', title: '难点卡单独加练', copy: '某张卡需要不同难度时，在这里覆盖全页模式，不影响其他卡片。' },
-  { selector: '[data-unit-download]', title: '把这一卡带走', copy: '点击会打开完整双语 A4 打印版，可在浏览器中另存为 PDF。' },
+  { selector: '[data-document-download]', title: '把整篇资料带走', copy: '文章只保留一个整篇下载入口，会打开完整双语 A4 打印版。' },
 ];
 
 const coach = document.querySelector<HTMLElement>('[data-tour-coach]');

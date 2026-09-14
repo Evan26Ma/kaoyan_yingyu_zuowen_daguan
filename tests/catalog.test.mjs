@@ -4,10 +4,11 @@ import { parse } from 'node-html-parser';
 import { catalog, loadCatalog, normalizeSearch } from '../src/lib/catalog.mjs';
 
 test('catalog has stable unique identifiers and routes', () => {
-  assert.equal(catalog.length, 12);
+  assert.equal(catalog.length, 13);
   assert.equal(new Set(catalog.map((item) => item.id)).size, catalog.length);
   assert.equal(new Set(catalog.map((item) => item.slug)).size, catalog.length);
   assert.equal(catalog.filter((item) => item.category === 'extra').length, 1);
+  assert.equal(catalog.filter((item) => item.category === 'reading').length, 1);
 });
 
 test('every source document is parsed into searchable learning content', async () => {
@@ -32,7 +33,17 @@ test('every source document is parsed into searchable learning content', async (
     }
     unitCount += item.units.length;
   }
-  assert.ok(unitCount >= 70, 'all twelve source sets should be split into enough focused units');
+  assert.ok(unitCount >= 85, 'all thirteen source sets should be split into enough focused units');
+});
+
+test('reading foundations are a non-masking reference list', async () => {
+  const items = await loadCatalog();
+  const reading = items.find((item) => item.id === 'reading-foundations');
+  assert.equal(reading?.studyMode, 'reference');
+  assert.ok(reading?.units.length >= 12);
+  assert.match(reading?.html || '', /reference-entry/);
+  assert.doesNotMatch(reading?.html || '', /memory-segment/);
+  assert.ok(reading?.units.every((unit) => parse(unit.html).querySelectorAll('.reference-entry').length <= 24));
 });
 
 test('search normalization supports mixed Chinese and English input', () => {

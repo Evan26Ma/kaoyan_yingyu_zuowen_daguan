@@ -50,7 +50,7 @@ await walk(path.join(root, 'content'));
 const declared = new Set(catalog.map((item) => item.source));
 for (const source of sourceFiles) if (!declared.has(source)) errors.push(`unmapped source page: ${source}`);
 
-if (sourceFiles.length !== 12) errors.push(`expected 12 source pages, found ${sourceFiles.length}`);
+if (sourceFiles.length !== catalog.length) errors.push(`expected ${catalog.length} source pages, found ${sourceFiles.length}`);
 if (imageReferences !== 37) errors.push(`expected 37 image references, found ${imageReferences}`);
 
 if (errors.length) {

@@ -17,9 +17,9 @@ const item = await loadEntry(catalog.find((entry) => entry.id === 'seven-five'))
       <div class="article-meta">{item.tags.map((tag: string) => <span>#{tag}</span>)}</div>
     </div>
   </header>
-  <StudyToolbar id={item.id} />
+  <StudyToolbar id={item.id} slug={item.slug} />
   <div class="shell article-layout">
-    <article class="study-content" data-study-content>{item.units.map((unit: any, index: number) => <LearningUnit unit={unit} slug={item.slug} number={index + 1} total={item.units.length} />)}</article>
+    <article class="study-content" data-study-content>{item.units.map((unit: any, index: number) => <LearningUnit unit={unit} number={index + 1} total={item.units.length} />)}</article>
     <aside class="article-toc"><strong>本文目录</strong><ol>{item.units.map((unit: any, index: number) => <li><a href={`#${unit.id}`}><span>{String(index + 1).padStart(2, '0')}</span>{unit.title}</a></li>)}</ol></aside>
   </div>
 </BaseLayout>

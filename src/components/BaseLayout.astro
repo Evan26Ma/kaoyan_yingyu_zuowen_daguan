@@ -37,11 +37,12 @@ const isExperimental = import.meta.env.PUBLIC_SITE_ENV === 'experimental';
         try {
           const saved = JSON.parse(localStorage.getItem('kaoyan-writing:v1') || '{}');
           if (saved.theme === 'dark') document.documentElement.dataset.theme = 'dark';
+          document.documentElement.dataset.readingStyle = saved.readingStyle === 'comfort' ? 'comfort' : 'exam';
         } catch {}
       })();
     </script>
   </head>
-  <body data-content-id={contentId}>
+  <body data-content-id={contentId} data-content-title={title}>
     <a class="skip-link" href="#main-content">跳到正文</a>
     {isExperimental && <div class="environment-banner" role="status">实验环境 · 功能和数据可能随时重置</div>}
     <Header />

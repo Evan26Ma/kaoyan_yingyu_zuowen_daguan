@@ -6,6 +6,7 @@ export const categories = [
   { id: 'big', label: '大作文', description: '材料作文、图画作文与社会现象真题' },
   { id: 'small', label: '小作文', description: '书信、通知与应用文写作模板' },
   { id: 'material', label: '语料模板', description: '分类语料、通用框架与主题名言' },
+  { id: 'reading', label: '阅读基础', description: '同义替换、逻辑关系与熟词僻义' },
 ];
 
 export const catalog = [
@@ -76,6 +77,12 @@ export const catalog = [
     tags: ['名言', '结尾', '主题升华'], years: [], featured: false,
   },
   {
+    id: 'reading-foundations', slug: 'reading-foundations', title: '阅读基础词汇与逻辑', category: 'reading', type: '阅读清单',
+    source: 'content/06-yuedu-jichu/01-tongyi-luoji-shuci.html',
+    description: '集中整理阅读理解中的同义替换、逻辑关系词与熟词僻义。',
+    tags: ['同义替换', '逻辑关系', '熟词僻义'], years: [], featured: true, studyMode: 'reference',
+  },
+  {
     id: 'seven-five', slug: 'seven-five', title: '七选五方法与排序题', category: 'extra', type: '附加资料',
     source: 'content/03-qi-wu-xuan-yi/01-jiefang.html',
     description: '七选五和排序题的快速解题步骤。',
@@ -103,6 +110,7 @@ function cleanText(value) {
   return value
     .replace(/Copyright\s*©\s*2024\s*大道至简Loru\.?(?:\s*All Rights Reserved\.)?/gi, '')
     .replace(/(?:^|\s)\d{1,2}\/37(?:\s|$)/g, ' ')
+    .replace(/^[\uF000-\uF8FF•]\s*/, '')
     .replace(/[ \t]+/g, ' ')
     .replace(/\s+([，。！？；：,.!?;:])/g, '$1')
     .trim();
@@ -141,6 +149,7 @@ const unitBoundaryPatterns = {
   'seven-five': [/^七选五$/, /^排序题$/],
   'essay-template': [/一幅图无对话/, /一幅图有对话/, /两幅图/],
   quotes: [/^名言$/],
+  'reading-foundations': [/^同义替换$/, /^1\.负向$/, /^2\.正向$/, /^3\.其他$/, /^逻辑关系$/, /顺接关系$/, /相反关系$/, /因果关系$/, /举例关系$/, /时间关系$/, /^熟词僻义$/, /^一、名词$/, /^二、动词$/, /^三、形容词$/, /^四、副词$/],
 };
 
 function isBoundary(entry, title) {
@@ -183,7 +192,7 @@ function buildLearningUnits(entry, main) {
     if (!hasSubstance || !nodes.length) return;
     const number = units.length + 1;
     const html = buildUnitHtml(nodes);
-    const text = cleanText(nodes.map((node) => node.text).join(' '));
+    const text = cleanText(nodes.map((node) => node.text).join(' ')) || title;
     units.push({
       id: `unit-${String(number).padStart(2, '0')}`,
       title,
@@ -208,13 +217,39 @@ function buildLearningUnits(entry, main) {
         hasSubstance = false;
       }
       title = (embeddedAdviceBoundary ? '（二）中间段：说明具体建议' : text).replace(/^[-▼]\s*/, '');
-      if (node.tagName !== 'H2' && !embeddedAdviceBoundary) continue;
+      if (!embeddedAdviceBoundary) continue;
     }
     nodes.push(node);
     if (node.tagName && node.tagName !== 'H2') hasSubstance = true;
   }
   flush();
-  return units;
+  const chunked = [];
+  for (const unit of units) {
+    if (entry.id !== 'reading-foundations') {
+      chunked.push(unit);
+      continue;
+    }
+    const wrapper = parse(`<div>${unit.html}</div>`).querySelector('div');
+    const children = wrapper?.childNodes || [];
+    const entries = children.filter((node) => node.classList?.contains('reference-entry'));
+    if (entries.length <= 24) {
+      chunked.push(unit);
+      continue;
+    }
+    for (let start = 0; start < entries.length; start += 24) {
+      const slice = entries.slice(start, start + 24);
+      const text = cleanText(slice.map((node) => node.text).join(' '));
+      chunked.push({
+        ...unit,
+        title: `${unit.title}（${Math.floor(start / 24) + 1}）`,
+        html: slice.map((node) => node.toString()).join('\n'),
+        plainText: text,
+        wordCount: (text.match(/[A-Za-z]+(?:['’-][A-Za-z]+)*/g) || []).length,
+        sentenceCount: 0,
+      });
+    }
+  }
+  return chunked.map((unit, index) => ({ ...unit, id: `unit-${String(index + 1).padStart(2, '0')}` }));
 }
 
 export async function loadEntry(entry, rootDir = process.cwd()) {
@@ -229,8 +264,8 @@ export async function loadEntry(entry, rootDir = process.cwd()) {
     .replace(/(?:>|\s)\d{1,2}\/37(?=<|\s)/g, (match) => match.startsWith('>') ? '>' : ' ')
     .replace(/<span class="citation"[^>]*>@大道至简Loru<\/span>/gi, '');
   const document = parse(editoriallyCleaned, { comment: false });
-  const main = document.querySelector('main');
-  if (!main) throw new Error(`${entry.source}: missing <main>`);
+  const main = document.querySelector('main') || document.querySelector('body');
+  if (!main) throw new Error(`${entry.source}: missing content root`);
 
   main.querySelectorAll('script, style').forEach((node) => node.remove());
   main.querySelectorAll('ol, ul').forEach((list) => {
@@ -258,8 +293,13 @@ export async function loadEntry(entry, rootDir = process.cwd()) {
     node.classList.add('study-block');
     node.classList.add(languageClass(text));
     if (isQuestionBlock(text)) node.classList.add('is-question');
+    if (entry.studyMode === 'reference' && node.tagName === 'P') {
+      node.classList.add('reference-entry');
+      const label = text.match(/^(.{1,24}?)[：:]/)?.[1] || text.match(/^([A-Za-z]+)\s*(?=(?:n|v|adj|adv)\.)/i)?.[1];
+      if (label) node.set_content(`<strong>${escapeHtml(label)}</strong>${escapeHtml(text.slice(label.length))}`);
+    }
   });
-  main.querySelectorAll('p.lang-en:not(.is-question), li.lang-en:not(.is-question), td.lang-en:not(.is-question), blockquote.lang-en:not(.is-question)').forEach((node) => {
+  if (entry.studyMode !== 'reference') main.querySelectorAll('p.lang-en:not(.is-question), li.lang-en:not(.is-question), td.lang-en:not(.is-question), blockquote.lang-en:not(.is-question)').forEach((node) => {
     const sentences = splitEnglishSentences(cleanText(node.text));
     node.setAttribute('data-memory-count', String(sentences.length));
     node.set_content(sentences.map((sentence, index) => (
