@@ -7,17 +7,18 @@
 需要 Node.js 22：
 
 ```bash
-npm install
-npm run dev
+corepack enable
+pnpm install
+pnpm dev
 ```
 
 常用检查：
 
 ```bash
-npm run audit:content
-npm test
-npm run check
-npm run build
+pnpm run audit:content
+pnpm test
+pnpm run check
+pnpm run build
 ```
 
 构建产物位于 `dist/`，不需要后端服务。
