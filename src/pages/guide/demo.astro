@@ -1,0 +1,53 @@
+---
+import BaseLayout from '../../components/BaseLayout.astro';
+import LearningUnit from '../../components/LearningUnit.astro';
+
+const demoUnit = {
+  id: 'demo-opening',
+  title: '示例：图画作文开头段',
+  kind: '开头段',
+  wordCount: 22,
+  sentenceCount: 2,
+  html: `<div class="bilingual-pair"><p class="lang-en"><span class="memory-segment"><span class="segment-full">As is vividly depicted in the drawing, two students are approaching the same goal in different ways.</span><span class="segment-initials">A i v d i t d, t s a a t s g i d w.</span></span></p><p class="lang-zh">正如图画中生动描绘的那样，两名学生正以不同方式奔向同一个目标。</p></div><div class="bilingual-pair"><p class="lang-en"><span class="memory-segment"><span class="segment-full">The picture reminds us that persistence is often more important than speed.</span><span class="segment-initials">T p r u t p i o m i t s.</span></span></p><p class="lang-zh">这幅图提醒我们，坚持往往比速度更重要。</p></div>`,
+};
+---
+
+<BaseLayout title="互动使用向导" description="通过固定示例卡学习背诵站的核心操作。" noindex>
+  <section class="guide-demo-hero">
+    <div class="shell">
+      <a href="/guide/">← 返回文字说明</a>
+      <p class="eyebrow">INTERACTIVE GUIDE</p>
+      <h1>跟着提示，亲手试一次</h1>
+      <p>这是独立示例，不会写入你的学习记录。</p>
+    </div>
+  </section>
+  <div class="demo-library shell" data-tour-target="library">
+    <span>资料库会把长文拆成</span><strong>可单独练习的语义卡片</strong>
+  </div>
+  <aside class="study-toolbar demo-toolbar" aria-label="示例背诵模式" data-tour-target="page-mode">
+    <div class="toolbar-inner shell">
+      <div class="reveal-control" role="group" aria-label="内容显示方式">
+        <span class="toolbar-label">全页模式</span>
+        <button type="button" data-reveal-mode="all" aria-pressed="true">中英对照</button>
+        <button type="button" data-reveal-mode="hide-en" aria-pressed="false">看中背英</button>
+        <button type="button" data-reveal-mode="initials" aria-pressed="false">首字母提示</button>
+        <button type="button" data-reveal-mode="recall" aria-pressed="false">完整回忆</button>
+      </div>
+    </div>
+  </aside>
+  <div class="shell guide-demo-stage">
+    <div data-tour-target="segment">
+      <LearningUnit unit={demoUnit} slug="demo" number={1} total={1} />
+    </div>
+  </div>
+  <div class="tour-overlay" data-tour-overlay hidden></div>
+  <aside class="tour-coach" data-tour-coach hidden aria-live="polite">
+    <div class="tour-progress"><span data-tour-count>1 / 5</span><button type="button" data-tour-skip>退出演练</button></div>
+    <h2 data-tour-title></h2>
+    <p data-tour-copy></p>
+    <div class="tour-actions"><button type="button" data-tour-previous>上一步</button><button class="primary-button" type="button" data-tour-next>下一步</button></div>
+  </aside>
+  <script>
+    import '../../scripts/guide.ts';
+  </script>
+</BaseLayout>

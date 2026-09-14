@@ -18,6 +18,17 @@ export interface LearningState {
   favorites: string[];
   completed: string[];
   recent: string[];
-  revealMode: 'all' | 'hide-en' | 'hide-zh';
+  revealMode: 'all' | 'hide-en' | 'initials' | 'recall';
   theme: 'light' | 'dark';
+}
+
+export interface LearningUnit {
+  id: string;
+  title: string;
+  kind: string;
+  html: string;
+  plainText: string;
+  wordCount: number;
+  sentenceCount: number;
+  printable: boolean;
 }

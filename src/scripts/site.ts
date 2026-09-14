@@ -1,4 +1,4 @@
-type RevealMode = 'all' | 'hide-en' | 'hide-zh';
+type RevealMode = 'all' | 'hide-en' | 'initials' | 'recall';
 type Theme = 'light' | 'dark';
 
 interface LearningState {
@@ -32,7 +32,7 @@ function readState(): LearningState {
       favorites: uniqueStrings(parsed.favorites),
       completed: uniqueStrings(parsed.completed),
       recent: uniqueStrings(parsed.recent).slice(0, 8),
-      revealMode: ['all', 'hide-en', 'hide-zh'].includes(parsed.revealMode) ? parsed.revealMode : 'all',
+      revealMode: ['all', 'hide-en', 'initials', 'recall'].includes(parsed.revealMode) ? parsed.revealMode : 'all',
       theme: parsed.theme === 'dark' ? 'dark' : 'light',
     };
   } catch {
@@ -120,13 +120,109 @@ function renderRecent() {
 
 function applyRevealMode(mode: RevealMode) {
   state.revealMode = mode;
-  const content = document.querySelector<HTMLElement>('[data-study-content]');
-  content?.classList.toggle('mask-en', mode === 'hide-en');
-  content?.classList.toggle('mask-zh', mode === 'hide-zh');
-  content?.querySelectorAll('.is-revealed').forEach((node) => node.classList.remove('is-revealed'));
+  document.querySelectorAll<HTMLElement>('[data-learning-unit]').forEach((unit) => {
+    const select = unit.querySelector<HTMLSelectElement>('[data-unit-mode]');
+    const selected = select?.value;
+    setUnitMode(unit, selected && selected !== 'default' ? selected as RevealMode : mode, true);
+  });
   document.querySelectorAll<HTMLButtonElement>('[data-reveal-mode]').forEach((button) => {
     button.setAttribute('aria-pressed', String(button.dataset.revealMode === mode));
   });
+}
+
+function unitSegments(unit: HTMLElement): HTMLElement[] {
+  return [...unit.querySelectorAll<HTMLElement>('.memory-segment')];
+}
+
+function updateUnitProgress(unit: HTMLElement) {
+  const segments = unitSegments(unit);
+  const revealed = segments.filter((segment) => segment.classList.contains('is-revealed')).length;
+  const progress = unit.querySelector<HTMLElement>('[data-unit-progress]');
+  if (progress) progress.textContent = `${revealed} / ${segments.length}`;
+}
+
+function setActiveSegment(unit: HTMLElement, index: number) {
+  const segments = unitSegments(unit);
+  segments.forEach((segment) => segment.classList.remove('is-active'));
+  if (!segments.length) return;
+  const next = Math.max(0, Math.min(index, segments.length - 1));
+  unit.dataset.activeSegment = String(next);
+  segments[next].classList.add('is-active');
+  segments[next].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function resetUnit(unit: HTMLElement) {
+  unit.querySelectorAll('.is-revealed, .is-active').forEach((node) => node.classList.remove('is-revealed', 'is-active'));
+  unit.dataset.activeSegment = '0';
+  const segments = unitSegments(unit);
+  if (segments.length && unit.dataset.mode !== 'all') segments[0].classList.add('is-active');
+  updateUnitProgress(unit);
+}
+
+function setUnitMode(unit: HTMLElement, mode: RevealMode, reset = false) {
+  unit.dataset.mode = mode;
+  unit.classList.remove('mode-all', 'mode-hide-en', 'mode-initials', 'mode-recall');
+  unit.classList.add(`mode-${mode}`);
+  if (reset) resetUnit(unit);
+}
+
+function revealNext(unit: HTMLElement) {
+  const mode = unit.dataset.mode as RevealMode;
+  const segments = unitSegments(unit);
+  const nextIndex = segments.findIndex((segment) => !segment.classList.contains('is-revealed'));
+  if (nextIndex < 0) {
+    announce('这一卡已经全部揭示');
+    return;
+  }
+  if (mode === 'recall') {
+    const pair = segments[nextIndex].closest('.bilingual-pair');
+    const chineseHint = pair?.querySelector<HTMLElement>('.lang-zh:not(.is-revealed)');
+    if (chineseHint) {
+      chineseHint.classList.add('is-revealed');
+      announce('已显示中文提示，再点一次揭示英文');
+      return;
+    }
+  }
+  segments[nextIndex].classList.add('is-revealed');
+  setActiveSegment(unit, Math.min(nextIndex + 1, segments.length - 1));
+  updateUnitProgress(unit);
+}
+
+function initLearningUnits() {
+  document.querySelectorAll<HTMLElement>('[data-learning-unit]').forEach((unit) => {
+    const segments = unitSegments(unit);
+    segments.forEach((segment, index) => {
+      segment.tabIndex = 0;
+      segment.setAttribute('role', 'button');
+      segment.setAttribute('aria-label', `第 ${index + 1} 句，点击揭示`);
+    });
+    updateUnitProgress(unit);
+  });
+
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('.article-toc a[href^="#"]')];
+  const sections = [...document.querySelectorAll<HTMLElement>('[data-learning-unit]')];
+  if ('IntersectionObserver' in window && links.length) {
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visible) return;
+      links.forEach((link) => link.classList.toggle('is-current', link.hash === `#${visible.target.id}`));
+    }, { rootMargin: '-28% 0px -58% 0px', threshold: [0, .15, .5] });
+    sections.forEach((section) => observer.observe(section));
+  }
+}
+
+function writeGuideState(status: 'dismissed' | 'completed') {
+  localStorage.setItem('kaoyan-writing:guide:v1', JSON.stringify({ version: 1, status, updatedAt: Date.now() }));
+}
+
+function initGuideWelcome() {
+  const dialog = document.querySelector<HTMLDialogElement>('[data-guide-welcome]');
+  if (!dialog || location.pathname.startsWith('/guide/')) return;
+  if (!localStorage.getItem('kaoyan-writing:guide:v1')) dialog.showModal();
+  dialog.querySelectorAll<HTMLElement>('[data-guide-dismiss]').forEach((control) => control.addEventListener('click', () => {
+    writeGuideState('dismissed');
+    dialog.close();
+  }));
 }
 
 function initLibrary() {
@@ -204,8 +300,45 @@ document.addEventListener('click', (event) => {
     saveState();
   }
 
-  const concealed = target.closest<HTMLElement>('.mask-en .lang-en:not(.is-revealed), .mask-zh .lang-zh:not(.is-revealed)');
-  if (concealed) concealed.classList.add('is-revealed');
+  const unitMode = target.closest<HTMLSelectElement>('[data-unit-mode]');
+  if (unitMode) return;
+
+  const control = target.closest<HTMLButtonElement>('[data-unit-action]');
+  if (control) {
+    const unit = control.closest<HTMLElement>('[data-learning-unit]');
+    if (!unit) return;
+    const current = Number(unit.dataset.activeSegment || 0);
+    if (control.dataset.unitAction === 'previous') setActiveSegment(unit, current - 1);
+    if (control.dataset.unitAction === 'next') setActiveSegment(unit, current + 1);
+    if (control.dataset.unitAction === 'reveal') revealNext(unit);
+    if (control.dataset.unitAction === 'reset') resetUnit(unit);
+    return;
+  }
+
+  const concealed = target.closest<HTMLElement>('.memory-segment:not(.is-revealed), .mode-recall .lang-zh:not(.is-revealed)');
+  if (concealed) {
+    concealed.classList.add('is-revealed');
+    const unit = concealed.closest<HTMLElement>('[data-learning-unit]');
+    if (unit) updateUnitProgress(unit);
+  }
+});
+
+document.addEventListener('change', (event) => {
+  const select = (event.target as HTMLElement).closest<HTMLSelectElement>('[data-unit-mode]');
+  if (!select) return;
+  const unit = select.closest<HTMLElement>('[data-learning-unit]');
+  if (!unit) return;
+  setUnitMode(unit, select.value === 'default' ? state.revealMode : select.value as RevealMode, true);
+});
+
+document.addEventListener('keydown', (event) => {
+  if (!['Enter', ' '].includes(event.key)) return;
+  const segment = (event.target as HTMLElement).closest<HTMLElement>('.memory-segment');
+  if (!segment) return;
+  event.preventDefault();
+  segment.classList.add('is-revealed');
+  const unit = segment.closest<HTMLElement>('[data-learning-unit]');
+  if (unit) updateUnitProgress(unit);
 });
 
 document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
@@ -232,3 +365,5 @@ if (state.theme === 'dark') document.documentElement.dataset.theme = 'dark';
 applyRevealMode(state.revealMode);
 syncStateUI();
 initLibrary();
+initLearningUnits();
+initGuideWelcome();

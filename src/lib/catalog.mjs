@@ -104,6 +104,115 @@ function cleanText(value) {
     .trim();
 }
 
+function escapeHtml(value) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+}
+
+function splitEnglishSentences(text) {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  return normalized.match(/[^.!?]+(?:[.!?]+[”"']?|$)/g)?.map((part) => part.trim()).filter(Boolean) || [normalized];
+}
+
+function initialsHint(sentence) {
+  return sentence.replace(/[A-Za-z]+(?:['’-][A-Za-z]+)*/g, (word) => {
+    if (word.length === 1) return word;
+    return `${word[0]}${'_'.repeat(Math.min(word.length - 1, 5))}`;
+  });
+}
+
+const unitBoundaryPatterns = {
+  'material-essay': [/真题例子/, /^首段$/, /核心论述/, /^结尾段$/, /迁移个人品质/],
+  'picture-character': [/首段、尾段/, /通用句型/, /真题例子/],
+  'social-topics': [/^社会现象积极$/, /^社会现象消极$/, /真题例子/],
+  'topic-corpus': [/亲子关系语料/, /作为孩子/, /作为父母/, /^[一二三四五六]、/],
+  'recommendation-letter': [/首段：说明写信目的/, /中间段：说明推荐理由/, /结尾段：总结收尾/, /真题例子/],
+  'advice-letter': [/首段：说明写信目的/, /中间段：说明具体建议/, /结尾段：总结收尾/, /真题例子/],
+  'invitation-letter': [/首段：发起邀请/, /中间段/, /结尾段/, /真题例子/],
+  notice: [/^活动通知$/, /^事务通知$/, /首段：/, /中间段：/, /结尾段：/, /真题例子/],
+  'reply-letter': [/做题思路/, /真题例子/],
+  'seven-five': [/^七选五$/, /^排序题$/],
+  'essay-template': [/一幅图无对话/, /一幅图有对话/, /两幅图/],
+  quotes: [/^名言$/],
+};
+
+function isBoundary(entry, title) {
+  if (/^20\d{2}(?:\s*年)?/.test(title)) return true;
+  return (unitBoundaryPatterns[entry.id] || []).some((pattern) => pattern.test(title));
+}
+
+function unitKind(title, fallback) {
+  if (/20\d{2}|真题/.test(title)) return '真题范文';
+  if (/首段|中间段|结尾段|模板/.test(title)) return '段落模板';
+  if (/语料|影响|关系|品质|名言/.test(title)) return '主题语料';
+  if (/思路|步骤|方法|七选五|排序题/.test(title)) return '方法技巧';
+  return fallback;
+}
+
+function buildUnitHtml(nodes) {
+  const parts = [];
+  for (let index = 0; index < nodes.length; index += 1) {
+    const node = nodes[index];
+    const next = nodes[index + 1];
+    const isEnglishParagraph = node.tagName === 'P' && node.classList?.contains('lang-en');
+    const isChineseParagraph = next?.tagName === 'P' && next.classList?.contains('lang-zh');
+    if (isEnglishParagraph && isChineseParagraph) {
+      parts.push(`<div class="bilingual-pair">${node.toString()}${next.toString()}</div>`);
+      index += 1;
+    } else {
+      parts.push(node.toString());
+    }
+  }
+  return parts.join('\n');
+}
+
+function buildLearningUnits(entry, main) {
+  const units = [];
+  let title = '快速导览';
+  let nodes = [];
+  let hasSubstance = false;
+
+  const flush = () => {
+    if (!hasSubstance || !nodes.length) return;
+    const number = units.length + 1;
+    const html = buildUnitHtml(nodes);
+    const text = cleanText(nodes.map((node) => node.text).join(' '));
+    units.push({
+      id: `unit-${String(number).padStart(2, '0')}`,
+      title,
+      kind: unitKind(title, entry.type),
+      html,
+      plainText: text,
+      wordCount: (text.match(/[A-Za-z]+(?:['’-][A-Za-z]+)*/g) || []).length,
+      sentenceCount: nodes.reduce((total, node) => total + Number(node.getAttribute?.('data-memory-count') || 0), 0),
+      printable: true,
+    });
+  };
+
+  for (const node of main.childNodes) {
+    const text = cleanText(node.text || '');
+    const shortCandidate = text.length > 0 && text.length < 80;
+    const embeddedAdviceBoundary = node.tagName === 'P' && /^[（(]二[）)]\s*中间段：说明具体建议/.test(text);
+    const canBeBoundary = ((node.tagName === 'H2' || node.tagName === 'P') && shortCandidate && isBoundary(entry, text)) || embeddedAdviceBoundary;
+    if (canBeBoundary) {
+      if (hasSubstance) {
+        flush();
+        nodes = [];
+        hasSubstance = false;
+      }
+      title = (embeddedAdviceBoundary ? '（二）中间段：说明具体建议' : text).replace(/^[-▼]\s*/, '');
+      if (node.tagName !== 'H2' && !embeddedAdviceBoundary) continue;
+    }
+    nodes.push(node);
+    if (node.tagName && node.tagName !== 'H2') hasSubstance = true;
+  }
+  flush();
+  return units;
+}
+
 export async function loadEntry(entry, rootDir = process.cwd()) {
   const filename = path.join(rootDir, entry.source);
   const raw = await fs.readFile(filename, 'utf8');
@@ -145,6 +254,16 @@ export async function loadEntry(entry, rootDir = process.cwd()) {
     node.classList.add('study-block');
     node.classList.add(languageClass(text));
   });
+  main.querySelectorAll('p.lang-en, li.lang-en, td.lang-en, blockquote.lang-en').forEach((node) => {
+    const sentences = splitEnglishSentences(cleanText(node.text));
+    node.setAttribute('data-memory-count', String(sentences.length));
+    node.set_content(sentences.map((sentence, index) => (
+      `<span class="memory-segment" data-memory-segment data-index="${index}" tabindex="0" role="button" aria-label="英文句子 ${index + 1}，点击揭示">` +
+      `<span class="segment-full">${escapeHtml(sentence)}</span>` +
+      `<span class="segment-initials" aria-hidden="true">${escapeHtml(initialsHint(sentence))}</span>` +
+      `</span>`
+    )).join(' '));
+  });
   main.querySelectorAll('img').forEach((image) => {
     const src = image.getAttribute('src') || '';
     image.setAttribute('src', src.replace(/^.*assets\/images\//, '/images/'));
@@ -168,6 +287,7 @@ export async function loadEntry(entry, rootDir = process.cwd()) {
     title: cleanText(heading.text),
   })).filter((item) => item.title);
   const imagePaths = main.querySelectorAll('img').map((image) => image.getAttribute('src'));
+  const units = buildLearningUnits(entry, main);
 
   return {
     ...entry,
@@ -175,6 +295,7 @@ export async function loadEntry(entry, rootDir = process.cwd()) {
     plainText: text,
     headings,
     imagePaths,
+    units,
     wordCount: (text.match(/[A-Za-z]+(?:['’-][A-Za-z]+)*/g) || []).length,
     reviewStatus: 'reviewed',
   };

@@ -1,0 +1,22 @@
+https://zuowen.kaoyangogogo.fun:8848 {
+    root * /var/www/zuowen.kaoyangogogo.fun/experimental/current
+    encode zstd gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'"
+        X-Robots-Tag "noindex, nofollow"
+        X-Environment experimental
+        Cache-Control "no-store"
+        -Server
+    }
+
+    file_server
+    handle_errors {
+        rewrite * /404.html
+        file_server
+    }
+}

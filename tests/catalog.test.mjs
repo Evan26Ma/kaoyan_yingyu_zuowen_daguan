@@ -11,6 +11,7 @@ test('catalog has stable unique identifiers and routes', () => {
 
 test('every source document is parsed into searchable learning content', async () => {
   const items = await loadCatalog();
+  let unitCount = 0;
   for (const item of items) {
     assert.ok(item.plainText.length > 30, `${item.id} should have body text`);
     assert.ok(item.headings.length > 0, `${item.id} should have headings`);
@@ -18,7 +19,19 @@ test('every source document is parsed into searchable learning content', async (
     assert.match(item.html, /lang-(?:en|zh|mixed)/, `${item.id} should classify text language`);
     assert.doesNotMatch(item.html, /\.\.\/\.\.\/assets\/images/, `${item.id} should use public image paths`);
     assert.doesNotMatch(item.html, /Copyright|大道至简Loru|模版|答复信&gt;/i, `${item.id} should remove known OCR noise`);
+    assert.ok(item.units.length > 0, `${item.id} should have semantic learning units`);
+    assert.equal(new Set(item.units.map((unit) => unit.id)).size, item.units.length, `${item.id} unit ids should be unique`);
+    for (const unit of item.units) {
+      assert.ok(unit.title && unit.plainText && unit.html, `${item.id}/${unit.id} should be complete`);
+      assert.equal(unit.printable, true, `${item.id}/${unit.id} should have a print route`);
+      if (unit.sentenceCount) {
+        assert.match(unit.html, /segment-full/, `${item.id}/${unit.id} should have full recall text`);
+        assert.match(unit.html, /segment-initials/, `${item.id}/${unit.id} should have initials hints`);
+      }
+    }
+    unitCount += item.units.length;
   }
+  assert.ok(unitCount >= 70, 'all twelve source sets should be split into enough focused units');
 });
 
 test('search normalization supports mixed Chinese and English input', () => {

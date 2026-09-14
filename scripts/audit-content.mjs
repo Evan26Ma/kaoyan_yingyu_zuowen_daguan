@@ -8,6 +8,7 @@ const errors = [];
 const ids = new Set();
 const slugs = new Set();
 let imageReferences = 0;
+let learningUnits = 0;
 
 for (const item of items) {
   if (ids.has(item.id)) errors.push(`duplicate id: ${item.id}`);
@@ -18,6 +19,16 @@ for (const item of items) {
   if (!item.plainText || item.plainText.length < 30) errors.push(`${item.id}: content is unexpectedly short`);
   if (!item.headings.length) errors.push(`${item.id}: no section headings`);
   if (!/lang-(?:en|zh|mixed)/.test(item.html)) errors.push(`${item.id}: text blocks have no language classification`);
+  if (!item.units?.length) errors.push(`${item.id}: no semantic learning units`);
+  const unitIds = new Set();
+  for (const unit of item.units || []) {
+    learningUnits += 1;
+    if (unitIds.has(unit.id)) errors.push(`${item.id}: duplicate unit id ${unit.id}`);
+    unitIds.add(unit.id);
+    if (!unit.title || !unit.html || !unit.plainText) errors.push(`${item.id}/${unit.id}: incomplete learning unit`);
+    if (unit.printable !== true) errors.push(`${item.id}/${unit.id}: unit is not printable`);
+    if (unit.sentenceCount > 0 && !/memory-segment/.test(unit.html)) errors.push(`${item.id}/${unit.id}: missing progressive recall markup`);
+  }
   if (/Copyright\s*©\s*2024\s*大道至简Loru/i.test(item.html)) errors.push(`${item.id}: page footer leaked into content`);
   for (const imagePath of item.imagePaths) {
     imageReferences += 1;
@@ -47,4 +58,4 @@ if (errors.length) {
   errors.forEach((error) => console.error(`- ${error}`));
   process.exit(1);
 }
-console.log(`Content audit passed: ${items.length} entries, ${sourceFiles.length} source pages, ${imageReferences} image references.`);
+console.log(`Content audit passed: ${items.length} entries, ${learningUnits} learning units, ${sourceFiles.length} source pages, ${imageReferences} image references.`);

@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../components/BaseLayout.astro';
 import StudyToolbar from '../../components/StudyToolbar.astro';
+import LearningUnit from '../../components/LearningUnit.astro';
 import { loadCatalog, categoryLabel } from '../../lib/catalog.mjs';
 
 export async function getStaticPaths() {
@@ -29,11 +30,13 @@ const { item } = Astro.props;
   </header>
   <StudyToolbar id={item.id} />
   <div class="shell article-layout">
-    <article class="study-content" data-study-content set:html={item.html}></article>
+    <article class="study-content" data-study-content>
+      {item.units.map((unit: any, index: number) => <LearningUnit unit={unit} slug={item.slug} number={index + 1} total={item.units.length} />)}
+    </article>
     <aside class="article-toc" aria-label="本文目录">
       <strong>本文目录</strong>
       <ol>
-        {item.headings.map((heading: any) => <li><a href={`#${heading.id}`}>{heading.title}</a></li>)}
+        {item.units.map((unit: any, index: number) => <li><a href={`#${unit.id}`}><span>{String(index + 1).padStart(2, '0')}</span>{unit.title}</a></li>)}
       </ol>
     </aside>
   </div>

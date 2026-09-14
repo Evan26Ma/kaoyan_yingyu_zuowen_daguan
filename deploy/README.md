@@ -9,3 +9,12 @@
 5. 配置仓库 Secrets 后，后续推送由 GitHub Actions 原子发布新版本。
 
 服务器配置变更前应保留备份，并分别执行 `caddy validate` 和 `nginx -t`。
+
+## 实验环境
+
+- 地址：`https://zuowen.kaoyangogogo.fun:8848/`
+- 构建：`PUBLIC_SITE_ENV=experimental pnpm build`
+- 发布目录：`/var/www/zuowen.kaoyangogogo.fun/experimental/releases/<版本>/`
+- Caddy 配置：`Caddyfile.experimental`
+
+实验版带有环境横幅，并通过响应头禁止搜索引擎收录和浏览器缓存。它与正式站的目录、软链接和发布流程完全独立。

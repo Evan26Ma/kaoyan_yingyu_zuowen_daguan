@@ -8,8 +8,9 @@ const { id } = Astro.props;
     <div class="reveal-control" role="group" aria-label="内容显示方式">
       <span class="toolbar-label">背诵模式</span>
       <button type="button" data-reveal-mode="all" aria-pressed="true">中英对照</button>
-      <button type="button" data-reveal-mode="hide-en" aria-pressed="false">遮住英文</button>
-      <button type="button" data-reveal-mode="hide-zh" aria-pressed="false">遮住中文</button>
+      <button type="button" data-reveal-mode="hide-en" aria-pressed="false">看中背英</button>
+      <button type="button" data-reveal-mode="initials" aria-pressed="false">首字母提示</button>
+      <button type="button" data-reveal-mode="recall" aria-pressed="false">完整回忆</button>
     </div>
     <div class="learning-actions">
       <button type="button" data-action="favorite" data-id={id} aria-pressed="false">
