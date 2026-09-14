@@ -49,19 +49,17 @@ const isExperimental = import.meta.env.PUBLIC_SITE_ENV === 'experimental';
       <slot />
     </main>
     <Footer />
-    {isExperimental && (
-      <dialog class="guide-welcome" data-guide-welcome aria-labelledby="guide-welcome-title">
-        <button class="guide-dialog-close" type="button" data-guide-dismiss aria-label="关闭向导">×</button>
-        <span class="guide-dialog-mark" aria-hidden="true">5</span>
-        <p class="eyebrow">第一次使用？</p>
-        <h2 id="guide-welcome-title">用 60 秒学会高效背诵</h2>
-        <p>我们会用一张固定示例卡，带你体验分区、四种背诵模式、逐句揭示和 PDF 下载，不会改变你的学习记录。</p>
-        <div class="guide-dialog-actions">
-          <a class="primary-button" href="/guide/demo/?tour=1">开始 5 步演练</a>
-          <button type="button" data-guide-dismiss>暂时跳过</button>
-        </div>
-      </dialog>
-    )}
+    <dialog class="guide-welcome" data-guide-welcome aria-labelledby="guide-welcome-title">
+      <button class="guide-dialog-close" type="button" data-guide-dismiss aria-label="关闭向导">×</button>
+      <span class="guide-dialog-mark" aria-hidden="true">5</span>
+      <p class="eyebrow">第一次使用？</p>
+      <h2 id="guide-welcome-title">用 60 秒学会高效背诵</h2>
+      <p>我们会用一张固定示例卡，带你体验分区、四种背诵模式、逐句揭示和 PDF 下载，不会改变你的学习记录。</p>
+      <div class="guide-dialog-actions">
+        <a class="primary-button" href="/guide/demo/?tour=1">开始 5 步演练</a>
+        <button type="button" data-guide-dismiss>暂时跳过</button>
+      </div>
+    </dialog>
     <script>
       import '../scripts/site.ts';
     </script>
