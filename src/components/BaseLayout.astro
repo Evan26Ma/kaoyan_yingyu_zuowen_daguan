@@ -1,0 +1,67 @@
+---
+import Header from './Header.astro';
+import Footer from './Footer.astro';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  contentId?: string;
+  noindex?: boolean;
+}
+
+const {
+  title = '考研英语作文大观',
+  description = '考研英语大作文、小作文、模板与语料的阅读背诵网站。',
+  contentId,
+  noindex = false,
+} = Astro.props;
+const fullTitle = title === '考研英语作文大观' ? title : `${title}｜考研英语作文大观`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const isExperimental = import.meta.env.PUBLIC_SITE_ENV === 'experimental';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#2563eb" />
+    {(isExperimental || noindex) && <meta name="robots" content="noindex,nofollow" />}
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>{fullTitle}</title>
+    <script is:inline>
+      (() => {
+        try {
+          const saved = JSON.parse(localStorage.getItem('kaoyan-writing:v1') || '{}');
+          if (saved.theme === 'dark') document.documentElement.dataset.theme = 'dark';
+        } catch {}
+      })();
+    </script>
+  </head>
+  <body data-content-id={contentId}>
+    <a class="skip-link" href="#main-content">跳到正文</a>
+    {isExperimental && <div class="environment-banner" role="status">实验环境 · 功能和数据可能随时重置</div>}
+    <Header />
+    <main id="main-content">
+      <slot />
+    </main>
+    <Footer />
+    <dialog class="guide-welcome" data-guide-welcome aria-labelledby="guide-welcome-title">
+      <button class="guide-dialog-close" type="button" data-guide-dismiss aria-label="关闭向导">×</button>
+      <span class="guide-dialog-mark" aria-hidden="true">5</span>
+      <p class="eyebrow">第一次使用？</p>
+      <h2 id="guide-welcome-title">用 60 秒学会高效背诵</h2>
+      <p>我们会用一张固定示例卡，带你体验分区、四种背诵模式、逐句揭示和 PDF 下载，不会改变你的学习记录。</p>
+      <div class="guide-dialog-actions">
+        <a class="primary-button" href="/guide/demo/?tour=1">开始 5 步演练</a>
+        <button type="button" data-guide-dismiss>暂时跳过</button>
+      </div>
+    </dialog>
+    <script>
+      import '../scripts/site.ts';
+    </script>
+  </body>
+</html>

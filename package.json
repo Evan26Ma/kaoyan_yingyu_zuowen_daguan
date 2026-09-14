@@ -1,0 +1,26 @@
+{
+  "name": "kaoyan-english-writing",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.15.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "npm run audit:content && astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "test": "node --test tests/*.test.mjs",
+    "audit:content": "node scripts/audit-content.mjs"
+  },
+  "dependencies": {
+    "astro": "^7.3.2",
+    "node-html-parser": "^7.0.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=22 <23"
+  }
+}

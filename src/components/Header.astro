@@ -1,0 +1,31 @@
+---
+const pathname = Astro.url.pathname;
+const active = (prefix: string) => prefix === '/' ? pathname === '/' : pathname.startsWith(prefix);
+---
+
+<header class="site-header">
+  <div class="shell header-inner">
+    <a class="brand" href="/" aria-label="考研英语作文大观首页">
+      <span class="brand-mark" aria-hidden="true">K</span>
+      <span><strong>作文大观</strong><small>考研英语背诵站</small></span>
+    </a>
+    <button class="nav-toggle icon-button" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="打开导航">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="site-nav" id="site-nav" data-site-nav aria-label="主导航">
+      <a class:list={[{ active: active('/') }]} href="/">首页</a>
+      <a class:list={[{ active: active('/library') || active('/learn') }]} href="/library/">作文资料</a>
+      <a class:list={[{ active: active('/favorites') }]} href="/favorites/">我的收藏</a>
+      <a class:list={[{ active: active('/extra') }]} href="/extra/qi-wu-xuan-yi/">七选五</a>
+      <a class:list={[{ active: active('/guide') }]} href="/guide/">使用向导</a>
+      <a class:list={[{ active: active('/about') }]} href="/about/">关于</a>
+    </nav>
+    <a class="help-button icon-button" href="/guide/" aria-label="打开使用向导" title="使用向导">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.8 9a2.4 2.4 0 1 1 3.6 2.08c-.9.52-1.4 1.02-1.4 2.02M12 17h.01"></path></svg>
+    </a>
+    <button class="theme-toggle icon-button" type="button" data-theme-toggle aria-label="切换深色模式" title="切换深色模式">
+      <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg>
+      <svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
+    </button>
+  </div>
+</header>

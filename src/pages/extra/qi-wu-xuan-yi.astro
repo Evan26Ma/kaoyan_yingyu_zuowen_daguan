@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../../components/BaseLayout.astro';
+import StudyToolbar from '../../components/StudyToolbar.astro';
+import LearningUnit from '../../components/LearningUnit.astro';
+import { catalog, loadEntry } from '../../lib/catalog.mjs';
+
+const item = await loadEntry(catalog.find((entry) => entry.id === 'seven-five'));
+---
+
+<BaseLayout title={item.title} description={item.description} contentId={item.id}>
+  <div class="shell breadcrumb"><a href="/">首页</a><span>/</span><span>附加资料</span></div>
+  <header class="article-hero">
+    <div class="shell">
+      <p class="eyebrow">EXTRA MATERIAL</p>
+      <h1>{item.title}</h1>
+      <p class="lead">{item.description} 这一部分作为作文学习之外的补充。</p>
+      <div class="article-meta">{item.tags.map((tag: string) => <span>#{tag}</span>)}</div>
+    </div>
+  </header>
+  <StudyToolbar id={item.id} />
+  <div class="shell article-layout">
+    <article class="study-content" data-study-content>{item.units.map((unit: any, index: number) => <LearningUnit unit={unit} slug={item.slug} number={index + 1} total={item.units.length} />)}</article>
+    <aside class="article-toc"><strong>本文目录</strong><ol>{item.units.map((unit: any, index: number) => <li><a href={`#${unit.id}`}><span>{String(index + 1).padStart(2, '0')}</span>{unit.title}</a></li>)}</ol></aside>
+  </div>
+</BaseLayout>

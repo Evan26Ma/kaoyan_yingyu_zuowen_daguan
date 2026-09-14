@@ -1,0 +1,20 @@
+---
+import PrintLayout from '../../../components/PrintLayout.astro';
+import { loadCatalog, categoryLabel } from '../../../lib/catalog.mjs';
+
+export async function getStaticPaths() {
+  const items = await loadCatalog();
+  return items.flatMap((item) => item.units.map((unit: any) => ({
+    params: { slug: item.slug, unit: unit.id },
+    props: { item, unit },
+  })));
+}
+const { item, unit } = Astro.props;
+---
+<PrintLayout title={`${item.title}｜${unit.title}`} description={`${unit.title}中英对照打印版`}>
+  <div class="print-brand">考研英语作文大观 · {categoryLabel(item.category)}</div>
+  <h1>{unit.title}</h1>
+  <p class="subtitle">{item.title} · {unit.kind} · {unit.wordCount ? `${unit.wordCount} 个英文词` : '学习资料'}</p>
+  <article class="print-content" set:html={unit.html}></article>
+  <footer class="print-source">资料来源：考研英语作文大观 · zuowen.kaoyangogogo.fun</footer>
+</PrintLayout>

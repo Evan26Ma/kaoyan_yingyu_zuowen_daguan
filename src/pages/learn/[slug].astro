@@ -1,0 +1,43 @@
+---
+import BaseLayout from '../../components/BaseLayout.astro';
+import StudyToolbar from '../../components/StudyToolbar.astro';
+import LearningUnit from '../../components/LearningUnit.astro';
+import { loadCatalog, categoryLabel } from '../../lib/catalog.mjs';
+
+export async function getStaticPaths() {
+  const items = (await loadCatalog()).filter((item) => item.category !== 'extra');
+  return items.map((item) => ({ params: { slug: item.slug }, props: { item } }));
+}
+
+const { item } = Astro.props;
+---
+
+<BaseLayout title={item.title} description={item.description} contentId={item.id}>
+  <div class="shell breadcrumb" aria-label="面包屑">
+    <a href="/">首页</a><span>/</span><a href="/library/">作文资料</a><span>/</span><span>{item.title}</span>
+  </div>
+  <header class="article-hero">
+    <div class="shell">
+      <p class="eyebrow">{categoryLabel(item.category)} · {item.type}</p>
+      <h1>{item.title}</h1>
+      <p class="lead">{item.description}</p>
+      <div class="article-meta">
+        {item.tags.map((tag: string) => <span>#{tag}</span>)}
+        {item.years.length > 0 && <span>{item.years[0]}—{item.years.at(-1)}</span>}
+        {item.wordCount > 0 && <span>约 {item.wordCount} 个英文词</span>}
+      </div>
+    </div>
+  </header>
+  <StudyToolbar id={item.id} />
+  <div class="shell article-layout">
+    <article class="study-content" data-study-content>
+      {item.units.map((unit: any, index: number) => <LearningUnit unit={unit} slug={item.slug} number={index + 1} total={item.units.length} />)}
+    </article>
+    <aside class="article-toc" aria-label="本文目录">
+      <strong>本文目录</strong>
+      <ol>
+        {item.units.map((unit: any, index: number) => <li><a href={`#${unit.id}`}><span>{String(index + 1).padStart(2, '0')}</span>{unit.title}</a></li>)}
+      </ol>
+    </aside>
+  </div>
+</BaseLayout>

@@ -1,0 +1,59 @@
+name: Build and deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.1
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm run check
+      - run: pnpm test
+      - run: pnpm run build
+
+      - name: Configure SSH
+        if: env.DEPLOY_HOST != '' && env.DEPLOY_USER != ''
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+
+      - name: Upload release
+        if: env.DEPLOY_HOST != '' && env.DEPLOY_USER != ''
+        env:
+          RELEASE: /var/www/zuowen.kaoyangogogo.fun/releases/${{ github.sha }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${DEPLOY_PORT:-22}" "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$RELEASE'"
+          rsync -az --delete -e "ssh -i ~/.ssh/deploy_key -p ${DEPLOY_PORT:-22}" dist/ "$DEPLOY_USER@$DEPLOY_HOST:$RELEASE/"
+          ssh -i ~/.ssh/deploy_key -p "${DEPLOY_PORT:-22}" "$DEPLOY_USER@$DEPLOY_HOST" "ln -sfn '$RELEASE' /var/www/zuowen.kaoyangogogo.fun/current"
+
+      - name: Verify production
+        if: env.DEPLOY_HOST != '' && env.DEPLOY_USER != ''
+        run: curl --fail --show-error --retry 5 --retry-delay 3 https://zuowen.kaoyangogogo.fun/ > /dev/null

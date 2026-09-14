@@ -1,0 +1,39 @@
+---
+import { categoryLabel } from '../lib/catalog.mjs';
+
+interface Props {
+  item: any;
+  hidden?: boolean;
+  context?: 'library' | 'favorite' | 'recent';
+}
+
+const { item, hidden = false, context = 'library' } = Astro.props;
+const href = item.category === 'extra' ? '/extra/qi-wu-xuan-yi/' : `/learn/${item.slug}/`;
+---
+
+<article
+  class:list={['resource-card', { 'is-client-hidden': hidden }]}
+  data-resource-card
+  data-id={item.id}
+  data-category={item.category}
+  data-context={context}
+>
+  <a class="card-main" href={href}>
+    <div class="card-meta">
+      <span class="category-chip">{categoryLabel(item.category)}</span>
+      <span>{item.type}</span>
+    </div>
+    <h3>{item.title}</h3>
+    <p>{item.description}</p>
+    <div class="tag-row">
+      {item.tags.slice(0, 3).map((tag: string) => <span>#{tag}</span>)}
+    </div>
+  </a>
+  <div class="card-actions">
+    <span>{item.years.length ? `${item.years.length} 个年份` : '专题资料'}</span>
+    <button class="text-action favorite-action" type="button" data-action="favorite" data-id={item.id} aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 17.3-6.2 3.3 1.2-7-5-4.9 7-1L12 1.4l3.1 6.3 6.9 1-5 4.9 1.2 7Z"></path></svg>
+      <span>收藏</span>
+    </button>
+  </div>
+</article>

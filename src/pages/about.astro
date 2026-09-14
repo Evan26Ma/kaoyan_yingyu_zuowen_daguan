@@ -1,0 +1,41 @@
+---
+import BaseLayout from '../components/BaseLayout.astro';
+---
+
+<BaseLayout title="关于与资料说明" description="考研英语作文大观的资料来源、使用方式和隐私说明。">
+  <section class="library-hero">
+    <div class="shell section-heading">
+      <p class="eyebrow">ABOUT THIS PROJECT</p>
+      <h1>关于这份资料</h1>
+      <p>从一份长文档到可以搜索、阅读和背诵的结构化学习站。</p>
+    </div>
+  </section>
+  <section class="section-tight">
+    <div class="shell about-grid">
+      <article class="info-card">
+        <h2>资料来源</h2>
+        <p>本站内容由“英语_withMarginNotes.pdf”的 MinerU HTML 导出版本整理而来，涵盖大作文、小作文、模板、分类语料、名言和七选五方法。</p>
+        <p>整理过程修复了明显的 OCR 排版噪声，并重新建立页面目录与学习交互。若发现内容问题，建议通过 GitHub Issue 提交具体页面和段落。</p>
+      </article>
+      <article class="info-card">
+        <h2>怎样使用</h2>
+        <ul>
+          <li>先从资料库按题型或主题找到目标内容。</li>
+          <li>阅读后选择“遮住英文”或“遮住中文”。</li>
+          <li>点击蓝色遮挡块逐段检查记忆。</li>
+          <li>收藏重点资料，并在学完后标记进度。</li>
+        </ul>
+      </article>
+      <article class="info-card">
+        <h2>隐私说明</h2>
+        <p>本站无需账号。收藏、已学、最近访问和主题偏好只写入浏览器本地存储，不会上传到服务器。</p>
+        <p>清理浏览器数据或更换设备后，这些记录无法自动恢复。</p>
+      </article>
+      <article class="info-card">
+        <h2>内容边界</h2>
+        <p>资料用于学习与背诵，不作为考试命题范围或标准答案的官方说明。本站不会在原文没有依据时自行添加英语一、英语二分类。</p>
+        <p><a class="link-arrow" href="https://github.com/Evan26Ma/kaoyan_yingyu_zuowen_daguan" target="_blank" rel="noreferrer">查看源仓库 →</a></p>
+      </article>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,37 +1,59 @@
 # 考研英语作文大观
 
-考研英语写作资料的结构化 HTML 版本。原始 MinerU 文档已按内容模块拆分，图片从 Base64 内嵌数据提取到 `assets/images/`，原文件保存在 `source/original.html`。
+一个由考研英语写作资料整理而成的静态学习网站，提供分类浏览、全文搜索、收藏、已学标记和中英文遮挡背诵。
 
-## 内容导航
+## 本地开发
 
-- [大作文｜材料作文](content/01-da-zuo-wen/01-cailiao-zuowen.html)
-- [大作文｜描述图片作文与个人品质真题](content/01-da-zuo-wen/02-tupian-zuowen.html)
-- [大作文｜社会现象真题](content/01-da-zuo-wen/03-shehui-xianxiang.html)
-- [大作文｜分类语料库](content/01-da-zuo-wen/04-yuliao.html)
-- [小作文｜推荐信](content/02-xiao-zuo-wen/01-tuijianxin.html)
-- [小作文｜建议信](content/02-xiao-zuo-wen/02-jianyixin.html)
-- [小作文｜邀请信](content/02-xiao-zuo-wen/03-yaoqingxin.html)
-- [小作文｜通知](content/02-xiao-zuo-wen/04-tongzhi.html)
-- [小作文｜答复信与回复邮件](content/02-xiao-zuo-wen/05-dafu-xin.html)
-- [七选五｜做题方法与排序题](content/03-qi-wu-xuan-yi/01-jiefang.html)
-- [大作文｜通用模板](content/04-da-zuo-wen-mo-ban/01-moban.html)
-- [名言｜主题升华素材](content/05-mingyan/01-mingyan.html)
+需要 Node.js 22：
+
+```bash
+corepack enable
+pnpm install
+pnpm dev
+```
+
+常用检查：
+
+```bash
+pnpm run audit:content
+pnpm test
+pnpm run check
+pnpm run build
+```
+
+构建产物位于 `dist/`，不需要后端服务。
+
+## 内容结构
+
+- `content/`：从原始 MinerU HTML 拆分的 12 个来源页面，作为可追溯内容源。
+- `assets/images/`：来源页面使用的 37 张图片。
+- `src/lib/catalog.mjs`：学习条目的分类、标签、年份以及构建期内容清洗规则。
+- `src/pages/`：首页、资料库、学习页、收藏、附加资料和说明页面。
+
+新增资料时，需要在 `src/lib/catalog.mjs` 中登记来源文件；生产构建会检查遗漏页面、失效图片和重复标识。
 
 ## 待加入资料
 
 - [27 考研｜同义替换、逻辑关系、熟词僻义](pending/待加入/MinerU_html_27考研_同义替换+逻辑关系+熟词僻义_2099640631314112512.html)（待分类、待拆分）
+- 详细说明见 [`pending/待加入/README.md`](pending/待加入/README.md)。
 
-## 目录说明
+## 学习数据
 
-- `content/01-da-zuo-wen/`：材料作文、图片作文、个人品质与社会现象真题、分类语料。
-- `content/02-xiao-zuo-wen/`：推荐信、建议信、邀请信、通知、答复信。
-- `content/03-qi-wu-xuan-yi/`：七选五做题思路与排序题。
-- `content/04-da-zuo-wen-mo-ban/`：大作文通用模板。
-- `content/05-mingyan/`：名言与主题升华素材。
-- `pending/待加入/`：已同步但尚未完成分类整理的新资料。
-- `assets/`：共享样式和从原始 HTML 提取的图片资源。
-- `source/`：原始 MinerU HTML 备份。
+收藏、已学、最近访问、遮挡方式和主题偏好保存在浏览器的 `kaoyan-writing:v1` 本地存储项中，不会上传到服务器。
 
-## 来源
+## 部署
 
-文件来源：`英语_withMarginNotes.pdf` 及后续 MinerU HTML 导出资料。本文档仅整理文件结构，不对原始资料内容作实质性改写。
+`deploy/Caddyfile` 是 `zuowen.kaoyangogogo.fun` 的站点配置示例。GitHub Actions 需要以下仓库 Secrets：
+
+- `DEPLOY_HOST`
+- `DEPLOY_USER`
+- `DEPLOY_PORT`
+- `DEPLOY_SSH_KEY`
+- `DEPLOY_KNOWN_HOSTS`
+
+服务器发布目录为 `/var/www/zuowen.kaoyangogogo.fun/`。首次发布前，应安装 Caddy 配置并确保部署用户可以写入该目录。
+未配置部署 Secrets 时，Actions 仍会完成检查和构建，但会安全跳过 SSH 发布步骤。
+
+## 来源说明
+
+内容来源为“英语_withMarginNotes.pdf”及后续 MinerU HTML 导出资料。网站负责结构、排版和学习交互整理，不代表官方考试标准答案。
